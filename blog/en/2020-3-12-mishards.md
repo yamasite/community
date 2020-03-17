@@ -83,7 +83,7 @@ For more information about Milvus metadata, refer to [How to view metadata](http
 
 #### Service discovery
 
-> Keywords: Apache Zookeeper、etcd、Consul、Kubernetes
+> Keywords: Apache Zookeeper, etcd, Consul, Kubernetes
 
 ![image_7](../assets/mishards/image_07.png)
 
@@ -97,33 +97,33 @@ Service discovery contains a lot of frameworks, including etcd, Consul, ZooKeepe
 
 ![image_8](../assets/mishards/image_08.png)
 
-服务发现和负载均衡配合使用，负载均衡策略可以配置成轮询、哈希和一致性哈希等。
+Service discovery and load balancing are used together. Load balancing can be configured as polling, hashing, or consistent hashing.
 
-负载均衡器负责将用户请求转发至 Mishards 节点。
+The load balancer is responsible for resending user requests to the Mishards node.
 
-每个 Mishards 节点通过服务发现中心拿到所有下游 Milvus 节点的信息，通过元数据服务知晓整个数据相关元数据。Mishards 实现服务分片就是对于这些素材的一种消费。Mishards 定义了路由策略相关的接口，并通过插件提供扩展。目前 Mishards 默认提供了基于存储最底层 segment 级别的一致性哈希路由策略。如图有 10 个数据段 s1, s2, s3… s10, 现在选择基于数据段的一致性哈希路由策略，Mishards 会将涉及 s1, s4, s6, s9 数据段的请求路由到 Milvus 1 节点, s2, s3, s5 路由到 Milvus 2 节点, s7, s8, s10 路由到 Milvus 3 节点。
+Each Mishards node acquires the information of all downstream Milvus nodes via the service discovery center. All related metadata can be acquired by metadata service. Mishards implements sharding by consuming these resources. Mishards defines the interfaces related to routing strategies and provides extensions via plugins. Currently, Mishards provides consistent hashing strategy based on the lowest segment level. As is shown in the chart, there are 10 segments, s1 to s10. Per the segment-based consistent hashing strategy, Mishards routes requests concerning s1, 24, s6, and s9 to the Milvus 1 node, s2, s3, s5 to the Milvus 2 node, and s7, s8, s10 to the Milvus 3 node.
 
-用户可以仿照默认的一致性哈希路由插件，根据自己的业务特点，定制个性化路由。
+Based on your business needs, you can customize routing by following the default consistent hashing routing plugin.
 
 #### Tracing
 
 > Keywords: OpenTracing、YAEGER、ZIPKIN
 
-分布式系统错综复杂，请求往往会分发给内部多个服务调用，为了方便问题的定位，我们需要跟踪内部的服务调用链。随着系统的复杂性越来越高，一个可行的链路追踪系统带来的好处就越显而易见。我们选择了已进入 CNCF 的 OpenTracing 分布式追踪标准，OpenTracing 通过提供平台无关，厂商无关的 API ,方便开发人员能够方便的实现链路跟踪系统。
+Given the complexity of a distributed system, requests are sent to multiple internal service invocations. To help pinpoint problems, we need to trace the internal service invocation chain. As the complexity increases, the benefits of an available tracing system are self-explanatory. We choose the CNCF OpenTracing standard. OpenTracing provides platform-independent, vendor-independent APIs for developers to conveniently implement a tracing system.
 
 ![image_9](../assets/mishards/image_09.png)
 
-上图是 Mishards 服务中调用搜索时链路跟踪的例子，Search 顺序调用 `get_routing`, `do_search` 和 `do_merge`。而 `do_search`又调用了 `search_127.0.0.1`。
+The previous chart is an example of tracing during search invocation. Search invokes `get_routing`, `do_search`, and `do_merge` consecutively. `do_search` also invokes `search_127.0.0.1`.
 
-整个链路跟踪记录形成下面一个树：
+The whole tracing record forms the following tree:
 
 ![image_10](../assets/mishards/image_10.png)
 
-下图是每个节点 request/response info 和 tags 的具体实例：
+The following chart shows examples of request/response info and tags of each node:
 
 ![image_11](../assets/mishards/image_11.png)
 
-OpenTracing 已经集成到 Milvus 中，我将会在 Milvus 与 OpenTracing 一文中详细讲解相关的概念以及实现细节。
+OpenTracing has been integrated to Milvus. More information will be covered in the upcoming articles.
 
 #### Monitoring and alerting
 
@@ -131,22 +131,22 @@ OpenTracing 已经集成到 Milvus 中，我将会在 Milvus 与 OpenTracing 一
 
 ![image_12](../assets/mishards/image_12.png)
 
-Milvus 已集成开源 Prometheus 采集指标数据, Grafana 实现指标的监控，Alertmanager 用于报警机制。Mishards 也会将 Prometheus 集成进去。
+Milvus has integrated Prometheus to collect metric data. Grafana implements metric-based monitoring and Alertmanager is used for alerting. Mishards will also integrate Prometheus.
 
 #### Log analysis
 
 > Keywords: Elastic、Logstash、Kibana
 
-集群服务日志文件分布在不同服务节点上，排查问题需要登录到相关服务器获取。分析排查问题时，往往需要结合多个日志文件协同分析。使用 ELK 日志分析组件是一个不错的选择。
+For clustering service, log files are distributed in different nodes. To pinpoint problems, you need to log to the corresponding servers to get the logs. Because multiple log files need to be analyzed together, server log analysis with the ELK stack is a good choice.
 
 ## Summary
 
-Mishards 作为 Milvus 服务中间件，集合了服务发现，请求路由，结果聚合，链路跟踪等功能，同时也提供了基于插件的扩展机制。目前，基于 Mishards 的分布式方案还存在以下几点不足:
+As the service middleware, Mishards integrates service discovery, routing request, result merging, and tracing. Plugin-based expansion is also provided. Currently, distributed solutions based on Mishards still have the following setbacks:
 
-- Mishards 采用代理模式作为中间层，有一定的延迟损耗。
-- Milvus 写节点是单点服务。
-- 依赖高可用 MySQL 服务。
-- 对于多分片且单分片多副本的情况，部署比较复杂。
-- 缺少缓存层，比如对元数据的访问。
+- Mishards uses proxy as the middle layer and has latency costs.
+- Milvus writable nodes are single-point services.
+- Dependent on highly-available MySQL service.
+- Deployment is complicated when there are multiple shards and a single shard has multiple copies.
+- Lacks a cache layer, such as access to metadata.
 
-我们会在之后的版本中尽快解决这些已知的问题，让 Mishards 可以更加方便的应用生产环境。
+We will fix these know issues in the upcoming versions so that Mishards can be applied to production environment more conveniently.
